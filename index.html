@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Valores MQTT</title>
+    <!-- Utilizar la librería para poder utilizar el protocolo MQTT-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.2.6/mqtt.js"></script>
+    <!-- Incluir Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Conectarse al broker mosquito
+        var client = mqtt.connect("ws://test.mosquitto.org:8080/mqtt");
+
+        // Variable global para almacenar los últimos mensajes recibidos
+        let ultimosMensajes = {};
+
+        // Función para conectarse al broker
+        function EventoConectar() {
+            console.log("Conectado a MQTT");
+            client.subscribe("/TX\\_BETO#", function (err) {
+                if (!err) {
+                    console.log("Suscrito a los temas");
+                    // Suscribirse a temas adicionales
+                    client.subscribe("/LDR");
+                    client.subscribe("/Foco");
+                    client.subscribe("/Humedad");
+                    client.subscribe("/Bomba\_agua");
+                    client.subscribe("/S\_ultrasonic");
+                    client.subscribe("/Cisterna");
+                    client.subscribe("/Vista/Hora");
+                    client.subscribe("/Vista/Fecha");
+                    client.subscribe("/Relay/Foco\_hora\_A");
+                    client.subscribe("/Relay/Foco\_hora\_D");
+                    client.subscribe("/Relay/Bomba\_hora\_A");
+                    client.subscribe("/Relay/Bomba\_hora\_D");
+                }
+            });
+        }
+
+        // Conectarse al broker
+        client.on("connect", EventoConectar);
+
+        // Manejar los mensajes recibidos
+        client.on("message", function (topic, message) {
+            console.log("Mensaje recibido en el tema " + topic + ": " + message.toString());
+            ultimosMensajes[topic] = message.toString(); // Actualizar el objeto ultimosMensajes
+
+            // Limpiar el contenido anterior
+            var mensajesContainer = document.getElementById("mensajes");
+            mensajesContainer.innerHTML = "";
+
+            // Crear la tabla
+            var tabla = document.createElement("table");
+            tabla.classList.add("table", "table-striped"); // Agregar clases de Bootstrap
+
+            // Agregar los nuevos mensajes a la tabla
+            for (let t in ultimosMensajes) {
+                var fila = tabla.insertRow();
+                var celdaTema = fila.insertCell();
+                var celdaMensaje = fila.insertCell();
+                celdaTema.textContent = t;
+                celdaMensaje.textContent = ultimosMensajes[t];
+            }
+
+            // Agregar la tabla al contenedor
+            mensajesContainer.appendChild(tabla);
+
+            // Obtener una referencia al botón
+            var miBoton = document.getElementById("miBoton");
+
+            // Agregar un escuchador de eventos para el clic del botón
+            miBoton.addEventListener("click", function() {
+                // Redirigir al enlace
+                window.location.href = "http://192.168.23.110";
+            });
+        });
+    </script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link active" href="#">Tabla</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="graficas.html">Graficas</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="container mt-3">
+        <h2>Valores recibidos desde MQTT</h2>
+        <div id="mensajes"></div>
+        <br><br>
+        <button type="button" class="btn btn-danger" id="miBoton">CAMARA</button>
+        <button onclick="location.href='http://192.168.23.110'">Llevame a otro lado</button>
+    </div>
+</body>
+</html>

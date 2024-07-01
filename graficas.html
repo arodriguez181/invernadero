@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Gráficas de Humedad y Luz</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.2.6/mqtt.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html">Tabla</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="#">Graficas</a>
+                </li>
+            </ul>
+        </nav>
+    
+        <div class="container mt-3">
+            <h2>Gráficas de Humedad y Luz</h2>
+            <div>
+                <canvas id="grafica-humedad"></canvas>
+            </div>
+            <div>
+                <canvas id="grafica-luz"></canvas>
+            </div>
+        </div>
+    <script>
+        // Conectarse al broker mosquito
+        var client = mqtt.connect("ws://test.mosquitto.org:8080/mqtt");
+
+        // Variables para almacenar los datos de las gráficas
+        let datosHumedad = {
+            labels: [],
+            datasets: [{
+                label: 'Humedad (%)',
+                data: [],
+                borderColor: 'blue',
+                fill: false
+            }]
+        };
+
+        let datosLuz = {
+            labels: [],
+            datasets: [{
+                label: 'Intensidad de luz (lux)',
+                data: [],
+                borderColor: 'orange',
+                fill: false
+            }]
+        };
+
+        // Configuración de las gráficas
+        const configHumedad = {
+            type: 'line',
+            data: datosHumedad,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        };
+
+        const configLuz = {
+            type: 'line',
+            data: datosLuz,
+            options: {}
+        };
+
+        // Crear las gráficas
+        const grafica1 = new Chart(document.getElementById('grafica-humedad'), configHumedad);
+        const grafica2 = new Chart(document.getElementById('grafica-luz'), configLuz);
+
+        // Función para conectarse al broker
+        function EventoConectar() {
+            console.log("Conectado a MQTT");
+            client.subscribe("/Humedad");
+            client.subscribe("/LDR");
+        }
+
+        // Conectarse al broker
+        client.on("connect", EventoConectar);
+
+        // Manejar los mensajes recibidos
+        client.on("message", function (topic, message) {
+            const valor = parseFloat(message.toString());
+            const fecha = new Date().toLocaleTimeString();
+
+            if (topic === "/Humedad") {
+                datosHumedad.labels.push(fecha);
+                datosHumedad.datasets[0].data.push(valor);
+                grafica1.update();
+            } else if (topic === "/LDR") {
+                datosLuz.labels.push(fecha);
+                datosLuz.datasets[0].data.push(valor);
+                grafica2.update();
+            }
+        });
+    </script>
+</body>
+</html>
